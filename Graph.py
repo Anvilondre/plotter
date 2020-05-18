@@ -1,83 +1,94 @@
-from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton
-import sys
-import matplotlib.pyplot as plt
+from PyQt5 import QtGui
+from PyQt5.QtWidgets import QDialog, QApplication, QPushButton, QVBoxLayout, QLineEdit, QLabel
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+import matplotlib.pyplot as plt
 import numpy as np
+import sys
 
 
-class Window(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Cycloid plotter!")
-        self.setGeometry(600, 300, 600, 600)
+class Window(QDialog):
+    def __init__(self, parent=None):
+        super(Window, self).__init__(parent)
 
-        self.MyUI()
+        self.figure = plt.figure()
+        self.canvas = FigureCanvas(self.figure)
 
-    def MyUI(self):
-        canvas = Canvas(self, width=4, height=3)
-        canvas.move(0, 0)
+        self.toolbar = NavigationToolbar(self.canvas, self)
 
-        plot_button = QPushButton("Plot!", self)
-        plot_button.move(100, 450)
-        plot_button.clicked.connect(canvas.plot)
+        self.button = QPushButton('Plot')
+        self.button.clicked.connect(self.plot)
 
-        save_button = QPushButton("Save", self)
-        save_button.move(250, 450)
-        save_button.clicked.connect(canvas.save)
+        self.button_defaults = QPushButton('Use default parameters')
+        self.button_defaults.clicked.connect(self.set_defaults)
 
+        self.line_A = QLineEdit('Enter A (real number)')
+        self.line_B = QLineEdit('Enter B (real number)')
 
-class Canvas(FigureCanvas):
-    def __init__(self, parent=None, width=5, height=5, dpi=100):
-        fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
-        fig.suptitle("Cycloid")
+        self.line_bottom = QLineEdit('Enter bottom boundary (real number from interval [0, 4*pi) less than top boundary)')
+        self.line_top = QLineEdit('Enter top boundary (real number from interval (0, 4*pi] bigger than bottom boundary)')
 
-        FigureCanvas.__init__(self, fig)
-        self.setParent(parent)
+        self.label = QLabel('Fill all the parameters')
+        self.label.setFont(QtGui.QFont("Arial", 10))
 
-        self.plot()
+        self.line_precision = QLineEdit('Enter precision (positive integer)')
 
-    def save(self):
-        self.figure.savefig('plot.png')
+        layout = QVBoxLayout()
+        layout.addWidget(self.toolbar)
+        layout.addWidget(self.canvas)
+        layout.addWidget(self.button)
+        layout.addWidget(self.button_defaults)
+        layout.addWidget(self.line_A)
+        layout.addWidget(self.line_B)
+        layout.addWidget(self.line_top)
+        layout.addWidget(self.line_bottom)
+        layout.addWidget(self.line_precision)
+        layout.addWidget(self.label)
+        self.setLayout(layout)
 
-    def plot(self, a=1, b=1, boundary=(4*np.pi)):
-        a = get_input("A")
-        b = get_input("B")
-        phi = np.linspace(0, boundary, 128)
-        x = a * phi - b * np.sin(phi)
-        y = a - b * np.cos(phi)
-        ax = self.figure.add_subplot()
-        ax.plot(x, y)
+    def set_defaults(self):
+        self.line_A.setText("1")
+        self.line_B.setText("1")
+        self.line_top.setText("12.56")
+        self.line_bottom.setText("0")
+        self.line_precision.setText("128")
 
+    def plot(self):
+        self.figure.clear()
+        ax = self.figure.add_subplot(111)
+        ax.set_title('Cycloid')
+        ax.set_ylabel('Y axis')
+        ax.set_xlabel('X axis')
 
-def get_input(name, min=None, max=None):
-    while True:
         try:
-            a = float(input("Enter " + name + ": "))
-            if min is not None:
-                if max is not None:
-                    if not min <= a <= max:
-                        raise ValueError
-                else:
-                    if not min <= a:
-                        raise ValueError
-            elif max is not None:
-                if not a <= max:
-                    raise ValueError
-            return a
+            a = float(self.line_A.text())
+            b = float(self.line_B.text())
+            min = float(self.line_bottom.text())
+            max = float(self.line_top.text())
+            if not 0 <= min < max <= 4 * np.pi:
+                raise ValueError
+            precision = int(self.line_precision.text())
         except ValueError:
-            print("Oops!  That was no valid value.  Try again...")
+            self.label.setText("IllegalValue error")
+            self.label.setFont(QtGui.QFont("Arial", 12))
+            self.label.setStyleSheet('color: red')
+            return
+        else:
+            self.label.setText("Everything seems ok!")
+            self.label.setFont(QtGui.QFont("Arial", 11))
+            self.label.setStyleSheet('color: green')
+
+        phi = np.linspace(min, max, precision)
+        x = a * phi - b * np.sin(phi) - 5
+        y = a - b * np.cos(phi) - 1
+        ax.plot(x, y)
+        self.canvas.draw()
 
 
-app = QApplication(sys.argv)
-window = Window()
-window.show()
-app.exec()
-# a = get_input("A")
-# b = get_input("B")
-# x, y = get_plot_data(a, b)
-# plt.xlabel("X axis")
-# plt.ylabel("Y axis")
-# plt.plot(x, y)
-# plt.show()
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+
+    main = Window()
+    main.show()
+
+    sys.exit(app.exec_())
