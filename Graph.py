@@ -25,11 +25,14 @@ class Window(QDialog):
         self.line_A = QLineEdit('Enter A (real number)')
         self.line_B = QLineEdit('Enter B (real number)')
 
-        self.line_bottom = QLineEdit('Enter bottom boundary (real number from interval [0, 4*pi) less than top boundary)')
-        self.line_top = QLineEdit('Enter top boundary (real number from interval (0, 4*pi] bigger than bottom boundary)')
+        self.line_bottom=QLineEdit('Enter bottom boundary (real number from interval [0, 4*pi) less than top boundary)')
+        self.line_top=QLineEdit('Enter top boundary (real number from interval (0, 4*pi] bigger than bottom boundary)')
 
         self.label = QLabel('Fill all the parameters')
         self.label.setFont(QtGui.QFont("Arial", 10))
+
+        self.x_func_label = QLabel('x = a * phi - b * sin(phi)')
+        self.y_func_label = QLabel('y = a - b * cos(phi)')
 
         self.line_precision = QLineEdit('Enter precision (positive integer)')
 
@@ -43,6 +46,8 @@ class Window(QDialog):
         layout.addWidget(self.line_top)
         layout.addWidget(self.line_bottom)
         layout.addWidget(self.line_precision)
+        layout.addWidget(self.x_func_label)
+        layout.addWidget(self.y_func_label)
         layout.addWidget(self.label)
         self.setLayout(layout)
 
@@ -63,9 +68,9 @@ class Window(QDialog):
         try:
             a = float(self.line_A.text())
             b = float(self.line_B.text())
-            min = float(self.line_bottom.text())
-            max = float(self.line_top.text())
-            if not 0 <= min < max <= 4 * np.pi:
+            min_val = float(self.line_bottom.text())
+            max_val = float(self.line_top.text())
+            if not 0 <= min_val < max_val <= 4 * np.pi:
                 raise ValueError
             precision = int(self.line_precision.text())
         except ValueError:
@@ -78,9 +83,9 @@ class Window(QDialog):
             self.label.setFont(QtGui.QFont("Arial", 11))
             self.label.setStyleSheet('color: green')
 
-        phi = np.linspace(min, max, precision)
-        x = a * phi - b * np.sin(phi) - 5
-        y = a - b * np.cos(phi) - 1
+        phi = np.linspace(min_val, max_val, precision)
+        x = a * phi - b * np.sin(phi)
+        y = a - b * np.cos(phi)
         ax.plot(x, y)
         self.canvas.draw()
 
